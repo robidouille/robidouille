@@ -1,0 +1,32 @@
+To compile:
+
+First make sure you have cmake and git installed:
+--------------------------------------------------
+sudo apt-get install cmake git
+
+
+You need the raspberry pi userland libraries:
+--------------------------------------------------
+mkdir -p ~/git/raspberrypi
+cd ~/git/raspberrypi
+git clone https://github.com/raspberrypi/userland.git
+cd userland
+./buildme
+
+
+To build the raspicam library:
+--------------------------------------------------
+cd wherever/you/downloaded/raspicam_cv/
+mkdir objs
+make
+
+This will create:
+-libraspicamcv.a: the raspberry cam library which provides an opencv like interface
+-raspicamtest: a small test app which uses the library
+
+
+Credits:
+--------------------------------------------------
+RaspiCamCV.c/h is the library source.
+It's converted from camcv_vid0.c from Pierre Raufast.
+https://thinkrpi.wordpress.com/
