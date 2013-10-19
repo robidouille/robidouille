@@ -16,7 +16,10 @@ cd userland
 
 To build the raspicam library:
 --------------------------------------------------
-cd wherever/you/downloaded/raspicam_cv/
+mkdir -p ~/git
+cd ~/git
+git clone https://github.com/robidouille/robidouille.git
+cd raspicam_cv
 mkdir objs
 make
 
@@ -24,9 +27,20 @@ This will create:
 -libraspicamcv.a: the raspberry cam library which provides an opencv like interface
 -raspicamtest: a small test app which uses the library
 
+To use it in your own project:
+--------------------------------------------------
+add the include path: -I$(HOME)/git/robidouille/raspicam_cv
+link with the raspicamcv library: -L$(HOME)/git/robidouille/raspicam_cv -lraspicamcv
+link with the userland libraries: -L$(HOME)/git/raspberrypi/userland/build/lib -lmmal_core -lmmal -l mmal_util -lvcos -lbcm_host
+
+In your code add a #include "RaspiCamCV.h", and replace:
+-cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
+-cvQueryFrame -> raspiCamCvQueryFrame
+-CvCapture -> RaspiCamCvCapture
 
 Credits:
 --------------------------------------------------
 RaspiCamCV.c/h is the library source.
 It's converted from camcv_vid0.c from Pierre Raufast.
+https://thinkrpi.wordpress.com/2013/05/22/opencv-and-camera-board-csi/
 https://thinkrpi.wordpress.com/
