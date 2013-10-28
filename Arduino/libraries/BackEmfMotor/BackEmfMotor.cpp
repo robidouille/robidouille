@@ -9,15 +9,19 @@
 #include "Arduino.h"
 #include "BackEmfMotor.h"
 
+//#define __DEBUG_BackEmfMotor__
+
 #define kPwmCycleMicros 10000
 #define kMeasureDelayMicros 10
 #define kMeasureDurationMicros 100
 #define kMaxPwmMicros (kPwmCycleMicros - kMeasureDelayMicros - kMeasureDurationMicros)
 
+#define ABS(x) ((x<0) ? (-x) : (x))
+
 BackEmfMotor::BackEmfMotor() {
 	fCommand = kStop;
 	fTargetSpeed = 255;
-	fPwmMicros = 1;
+	fPwmMicros = 0;
 	fLastStateChangeMicros = 0;
 	fState = kStopped;
 	fMeasureAccumulator = 0;
@@ -27,9 +31,6 @@ BackEmfMotor::BackEmfMotor() {
 	fCurrentSpeed = 0;
 	fIntegral = 0;
 	fPrevError = 0;
-#ifdef __DEBUG_BackEmfMotor__
-	fDebugPin = -1;
-#endif
 }
 
 #ifdef __Use_CombinedL298HBridge__
@@ -40,28 +41,16 @@ void BackEmfMotor::Initialize(int pin1, int enablePin1, int pin2, int enablePin2
 	fHBridge.Initialize(pin1, enablePin1, pin2, enablePin2, pwmPin);
 #endif
 
-#ifdef __DEBUG_BackEmfMotor__
-	if (fDebugPin >= 0) {
-		pinMode(fDebugPin, OUTPUT);
-		digitalWrite(fDebugPin, false);
-	}
-#endif
-
 	fAnalogPin = analogPin;
 
 	fHBridge.Stop();
 }
 
-void BackEmfMotor::Service() {
+bool BackEmfMotor::Service() {
 	unsigned long elapsedMicros = micros() - fLastStateChangeMicros;
 	switch (fState) {
 	case kStarted:
-		if (elapsedMicros > fPwmMicros) {
-#ifdef __DEBUG_BackEmfMotor__
-			if (fDebugPin >= 0) {
-				digitalWrite(fDebugPin, true);
-			}
-#endif
+		if (elapsedMicros > ABS(fPwmMicros)) {
 			WaitToMeasure();
 		}
 		break;
@@ -77,25 +66,21 @@ void BackEmfMotor::Service() {
 		if (measure > fMaxMeasure) fMaxMeasure = measure;
 		if (measure < fMinMeasure) fMinMeasure = measure;
 
-		if (elapsedMicros > (kPwmCycleMicros - fPwmMicros)) {
-			if (fTargetSpeed >= 0) {
-				UpdatePwm();
+		if (elapsedMicros > (kPwmCycleMicros - ABS(fPwmMicros))) {
+			UpdatePwm();
 
-				fMaxMeasure = 0;
-				fMinMeasure = 32767;
-			}
+			fMaxMeasure = 0;
+			fMinMeasure = 32767;
+
 			Start();
-#ifdef __DEBUG_BackEmfMotor__
-			if (fDebugPin >= 0) {
-				digitalWrite(fDebugPin, false);
-			}
-#endif
+			return true;
 		}
 	} break;
 	case kFreed:
 	case kStopped:
 		break;
 	}
+	return false;
 }
 
 void BackEmfMotor::UpdatePwm() {
@@ -116,15 +101,17 @@ void BackEmfMotor::UpdatePwm() {
 	int derivative = error - fPrevError;
 	fPrevError = error;
 
-	fPwmMicros += error / 4;
-	//fPwmMicros += fIntegral / 4;
-	//fPwmMicros += derivative / 4;
+	if (fTargetSpeed != kMaxInt) {
+		fPwmMicros += error / 4;
+		//fPwmMicros += fIntegral / 4;
+		//fPwmMicros += derivative / 4;
+	}
 
-	if (fPwmMicros < 1) fPwmMicros = 1;
+	if (fPwmMicros < -kMaxPwmMicros) fPwmMicros = -kMaxPwmMicros;
 	else if (fPwmMicros > kMaxPwmMicros) fPwmMicros = kMaxPwmMicros;
 
 #ifdef __DEBUG_BackEmfMotor__
-	Serial.print("m=");
+	Serial.print("mt=");
 	Serial.print(fMeasureAccumulator);
 	Serial.print(" mc=");
 	Serial.print(fMeasureCount);
@@ -134,14 +121,16 @@ void BackEmfMotor::UpdatePwm() {
 	Serial.print(averageMeasure);
 	Serial.print(" max=");
 	Serial.print(fMaxMeasure);
-	Serial.print(" t=");
+	Serial.print(" tgt=");
 	Serial.print(fTargetSpeed);
 	Serial.print(" pwm=");
 	Serial.print(fPwmMicros);
-	Serial.print(" e=");
+	Serial.print(" err=");
 	Serial.print(error);
-	Serial.print(" i=");
+	Serial.print(" int=");
 	Serial.print(fIntegral);
+	Serial.print(" der=");
+	Serial.print(derivative);
 	Serial.println("");
 #endif
 }

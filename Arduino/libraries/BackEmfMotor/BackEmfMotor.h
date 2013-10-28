@@ -9,8 +9,6 @@
 #ifndef __BackEmfMotor__
 #define __BackEmfMotor__
 
-#define __DEBUG_BackEmfMotor__
-
 #define __Use_CombinedL298HBridge__
 
 #include "Arduino.h"
@@ -20,6 +18,8 @@
 #else
 #include <PololuHBridge.h>
 #endif
+
+#define kMaxInt 32767
 
 class BackEmfMotor {
 public:
@@ -35,10 +35,9 @@ public:
 
 	int GetCurrentSpeed() const {return fCurrentSpeed;}
 	void SetCommand(Command command) {fCommand = command;}
-	void SetDirection(int direction) {fHBridge.SetDirection(direction);}
 	void SetTargetSpeed(int speed) {fTargetSpeed = speed;}
 	void SetPwmMicros(int pwmMicros) {
-		fTargetSpeed = -1;
+		fTargetSpeed = kMaxInt;
 		fPwmMicros = pwmMicros;
 	}
 
@@ -62,11 +61,7 @@ public:
 		}
 	}
 
-	void Service();
-
-#ifdef __DEBUG_BackEmfMotor__
-	int fDebugPin;
-#endif
+	bool Service();
 
 private:
 	enum State {kStopped, kFreed, kStarted, kWaitToMeasure, kMeasuring};
@@ -77,7 +72,13 @@ private:
 	}
 
 	void Start() {
-		fHBridge.Start();
+		if (fPwmMicros == 0) {
+			fHBridge.Stop();
+		}
+		else {
+			fHBridge.SetDirection((fPwmMicros < 0) ? 1 : 0);
+			fHBridge.Start();
+		}
 		SetState(kStarted);
 	}
 
@@ -112,14 +113,14 @@ private:
 	int fAnalogPin;
 
 	Command fCommand;
+	State fState;
+	unsigned long fLastStateChangeMicros;
+	unsigned long fMeasureAccumulator;
 	int fTargetSpeed;
 	int fCurrentSpeed;
 	int fIntegral;
 	int fPrevError;
 	int fPwmMicros;
-	unsigned long fLastStateChangeMicros;
-	State fState;
-	unsigned long fMeasureAccumulator;
 	int fMinMeasure;
 	int fMaxMeasure;
 	int fMeasureCount;
