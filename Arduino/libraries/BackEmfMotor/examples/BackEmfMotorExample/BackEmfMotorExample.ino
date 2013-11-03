@@ -18,32 +18,17 @@
 
 BackEmfMotor gMotor;
 
-static void StartTargetSpeed(int speed, int dir) {
+static void StartTargetSpeed(int speed) {
   gMotor.SetTargetSpeed(speed);
   gMotor.SetCommand(BackEmfMotor::kStart);
-  gMotor.SetDirection(dir);
 }
 
-static void StartPWMSpeed(int pwm, int dir) {
-  gMotor.SetPwm(pwm);
+static void StartPwmMicros(int pwmMicros) {
+  gMotor.SetPwmMicros(pwmMicros);
   gMotor.SetCommand(BackEmfMotor::kStart);
-  gMotor.SetDirection(dir);
-}
-
-static void SetupPrescaler() {
-  //clear timer 1 bits
-  TCCR1B &= ~(0x7);
-  //set timer 1 prescaler to 1
-  TCCR1B |= 0x1;
-
-  //clear timer 2 bits
-  TCCR2B &= ~(0x7);
-  //set timer 2 prescaler to 1
-  TCCR2B |= 0x1;
 }
 
 void setup() {
-  SetupPrescaler();
 #ifdef __Use_CombinedL298HBridge__
   gMotor.Initialize(2, 3, 4, 11, 1);
 #else
@@ -64,22 +49,22 @@ void loop() {
       gMotor.SetCommand(BackEmfMotor::kStop);
       break;
     case '8':
-      StartTargetSpeed(256, 0);
+      StartTargetSpeed(256);
       break;
     case '2':
-      StartTargetSpeed(256, 1);
+      StartTargetSpeed(-256);
       break;
     case '7':
-      StartPWMSpeed(255, 0);
+      StartPwmMicros(9000);
       break;
     case '1':
-      StartPWMSpeed(255, 1);
+      StartPwmMicros(-9000);
       break;
     case '9':
-      StartPWMSpeed(128, 0);
+      StartPwmMicros(6000);
       break;
     case '3':
-      StartPWMSpeed(128, 1);
+      StartPwmMicros(-6000);
       break;
     }
 
