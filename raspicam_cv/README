@@ -22,7 +22,7 @@ To build the raspicam library:
 mkdir -p ~/git
 cd ~/git
 git clone https://github.com/robidouille/robidouille.git
-cd raspicam_cv
+cd robidouille/raspicam_cv
 mkdir objs
 make
 
