@@ -24,11 +24,14 @@ BackEmfMotor::BackEmfMotor() {
 	fPwmMicros = 0;
 	fLastStateChangeMicros = 0;
 	fState = kStopped;
+	fPosition = 0;
+	fSpeed = 0;
+	fAcceleration = 0;
+	fPrevSpeed = 0;
 	fMeasureAccumulator = 0;
 	fMeasureCount = 0;
 	fMaxMeasure = 0;
 	fMinMeasure = 32767;
-	fCurrentSpeed = 0;
 	fIntegral = 0;
 	fPrevError = 0;
 }
@@ -83,12 +86,55 @@ bool BackEmfMotor::Service() {
 	return false;
 }
 
+#ifdef __DEBUG_BackEmfMotor__
+static void DebugPrintVar(char * name, int num) {
+	Serial.print(name);
+	Serial.print(num);
+	Serial.print("=");
+}
+
+static void DebugPrint(char * name, int num, int value) {
+	DebugPrintVar(name, num);
+	Serial.print(value);
+}
+
+static void DebugPrint(char * name, int num, unsigned long value) {
+	DebugPrintVar(name, num);
+	Serial.print(value);
+}
+#endif
+
 void BackEmfMotor::UpdatePwm() {
+	// Measure what actually happened
 	int averageMeasure = fMeasureAccumulator / fMeasureCount;
+	int measure = fMaxMeasure;
 
-	fCurrentSpeed = fMaxMeasure;
+	if (fPwmMicros < 0) {
+		fSpeed = -measure;
+		unsigned long newPosition = fPosition + fSpeed;
+		if (newPosition <= fPosition) { // check for overflow
+			fPosition = newPosition;
+		}
+		else {
+			fPosition = 0;
+		}
+	}
+	else {
+		fSpeed = measure;
+		unsigned long newPosition = fPosition + fSpeed;
+		if (newPosition >= fPosition) { // check for overflow
+			fPosition = newPosition;
+		}
+		else {
+			fPosition = 0xFFFFffff;
+		}
+	}
 
-	int error = fTargetSpeed - fCurrentSpeed;
+	fAcceleration = fSpeed - fPrevSpeed;
+	fPrevSpeed = fSpeed;
+
+	// PID algorithm.
+	int error = fTargetSpeed - fSpeed;
 
 	fIntegral += error;
 	if (fIntegral > 5000) {
@@ -111,26 +157,21 @@ void BackEmfMotor::UpdatePwm() {
 	else if (fPwmMicros > kMaxPwmMicros) fPwmMicros = kMaxPwmMicros;
 
 #ifdef __DEBUG_BackEmfMotor__
-	Serial.print("mt=");
-	Serial.print(fMeasureAccumulator);
-	Serial.print(" mc=");
-	Serial.print(fMeasureCount);
-	Serial.print(" min=");
-	Serial.print(fMinMeasure);
-	Serial.print(" avg=");
-	Serial.print(averageMeasure);
-	Serial.print(" max=");
-	Serial.print(fMaxMeasure);
-	Serial.print(" tgt=");
-	Serial.print(fTargetSpeed);
-	Serial.print(" pwm=");
-	Serial.print(fPwmMicros);
-	Serial.print(" err=");
-	Serial.print(error);
-	Serial.print(" int=");
-	Serial.print(fIntegral);
-	Serial.print(" der=");
-	Serial.print(derivative);
+	DebugPrint("mt", fAnalogPin, fMeasureAccumulator);
+	DebugPrint(" mc", fAnalogPin, fMeasureCount);
+	DebugPrint(" min", fAnalogPin, fMinMeasure);
+	DebugPrint(" avg", fAnalogPin, averageMeasure);
+	DebugPrint(" max", fAnalogPin, fMaxMeasure);
+	DebugPrint(" tgt", fAnalogPin, fTargetSpeed);
+	DebugPrint(" tgt", fAnalogPin, fTargetSpeed);
+	DebugPrint(" pwm", fAnalogPin, fPwmMicros);
+	DebugPrint(" err", fAnalogPin, error);
+	DebugPrint(" int", fAnalogPin, fIntegral);
+	DebugPrint(" der", fAnalogPin, derivative);
+	DebugPrint(" min", fAnalogPin, fMinMeasure);
+	DebugPrint(" pos", fAnalogPin, fPosition);
+	DebugPrint(" spd", fAnalogPin, fSpeed);
+	DebugPrint(" acc", fAnalogPin, fAcceleration);
 	Serial.println("");
 #endif
 }

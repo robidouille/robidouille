@@ -33,7 +33,6 @@ public:
 	void Initialize(int pin1, int enablePin1, int pin2, int enablePin2, int pwmPin, int analogPin);
 #endif
 
-	int GetCurrentSpeed() const {return fCurrentSpeed;}
 	void SetCommand(Command command) {fCommand = command;}
 	void SetTargetSpeed(int speed) {fTargetSpeed = speed;}
 	void SetPwmMicros(int pwmMicros) {
@@ -43,6 +42,12 @@ public:
 
 	int GetTargetSpeed() const {return fTargetSpeed;}
 	int GetPwmMicros() const {return fPwmMicros;}
+
+	unsigned long GetPosition() const {return fPosition;}
+	void SetPosition(unsigned long position) {fPosition = position;}
+
+	int GetSpeed() const {return fSpeed;}
+	int GetAcceleration() const {return fAcceleration;}
 
 	void Commit() {
 		switch (fCommand) {
@@ -72,14 +77,14 @@ private:
 	}
 
 	void Start() {
-		if (fPwmMicros == 0) {
-			fHBridge.Stop();
+		fHBridge.SetDirection((fPwmMicros < 0) ? 1 : 0);
+		if (fPwmMicros != 0) {
+			fHBridge.Start();
+			SetState(kStarted);
 		}
 		else {
-			fHBridge.SetDirection((fPwmMicros < 0) ? 1 : 0);
-			fHBridge.Start();
+			WaitToMeasure();
 		}
-		SetState(kStarted);
 	}
 
 	void Stop() {
@@ -116,8 +121,12 @@ private:
 	State fState;
 	unsigned long fLastStateChangeMicros;
 	unsigned long fMeasureAccumulator;
+	unsigned long fPosition;
+	int fSpeed;
+	int fAcceleration;
+	int fPrevSpeed;
+
 	int fTargetSpeed;
-	int fCurrentSpeed;
 	int fIntegral;
 	int fPrevError;
 	int fPwmMicros;
