@@ -3,7 +3,7 @@ OBJS = objs
 CFLAGS_OPENCV = -I/usr/include/opencv
 LDFLAGS2_OPENCV = -lopencv_highgui -lopencv_core -lopencv_legacy -lopencv_video -lopencv_features2d -lopencv_calib3d -lopencv_imgproc
 
-USERLAND_ROOT = $(HOME)/git/raspberrypi/userland
+USERLAND_ROOT = $(HOME)/dev/userland
 CFLAGS_PI = \
 	-I$(USERLAND_ROOT)/host_applications/linux/libs/bcm_host/include \
 	-I$(USERLAND_ROOT)/host_applications/linux/apps/raspicam \

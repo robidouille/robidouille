@@ -117,8 +117,8 @@ static void default_status(RASPIVID_STATE *state)
 
    // Now set anything non-zero
    state->finished          = 0;
-   state->width 			= 640;      // use a multiple of 320 (640, 1280)
-   state->height 			= 480;		// use a multiple of 240 (480, 960)
+   state->width 			= 2592;      // use a multiple of 320 (640, 1280)
+   state->height 			= 1944;		// use a multiple of 240 (480, 960)
    state->bitrate 			= 17000000; // This is a decent default bitrate for 1080p
    state->framerate 		= VIDEO_FRAME_RATE_NUM;
    state->immutableInput 	= 1;
