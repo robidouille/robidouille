@@ -418,6 +418,10 @@ static void check_disable_port(MMAL_PORT_T *port)
 
 RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 {
+		return raspiCamCvCreateCameraCaptureWithDims(640, 480);
+}
+RaspiCamCvCapture * raspiCamCvCreateCameraCaptureWithDims(int width, int height)
+{
 	RaspiCamCvCapture * capture = (RaspiCamCvCapture*)malloc(sizeof(RaspiCamCvCapture));
 	// Our main data storage vessel..
 	RASPIVID_STATE * state = (RASPIVID_STATE*)malloc(sizeof(RASPIVID_STATE));
@@ -431,6 +435,8 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 
 	// read default status
 	default_status(state);
+	state->width = width;
+	state->height = height;
 
 	int w = state->width;
 	int h = state->height;

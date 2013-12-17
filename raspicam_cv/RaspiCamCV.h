@@ -14,6 +14,7 @@ typedef struct {
 typedef struct _IplImage IplImage;
 
 RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index);
+RaspiCamCvCapture * raspiCamCvCreateCameraCaptureWithDims(int width, int height);
 void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture);
 void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value);
 IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture);
