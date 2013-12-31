@@ -21,6 +21,36 @@
 
 #define kMaxInt 32767
 
+class Measure {
+public:
+	Measure() {Reset();}
+
+	void Add(int value) {
+		fAccumulator += value;
+		fCount++;
+		if (value > fMax) fMax = value;
+		if (value < fMin) fMin = value;
+	}
+
+	void Reset() {
+		fAccumulator = 0;
+		fMax = 0;
+		fMin = 32767;
+		fCount = 0;
+	}
+
+	unsigned long GetAccumulator() const {return fAccumulator;}
+	int GetAverage() const {return fAccumulator / fCount;}
+	int GetMin() const {return fMin;}
+	int GetMax() const {return fMax;}
+	int GetCount() const {return fCount;}
+private:
+	unsigned long fAccumulator;
+	int fMin;
+	int fMax;
+	int fCount;
+};
+
 class BackEmfMotor {
 public:
 	enum Command {kStop, kFree, kStart};
@@ -103,8 +133,7 @@ private:
 	}
 
 	void StartMeasure() {
-		fMeasureAccumulator = 0;
-		fMeasureCount = 0;
+		fMeasure.Reset();
 		SetState(kMeasuring);
 	}
 
@@ -115,12 +144,12 @@ private:
 #else
 	PololuHBridge fHBridge;
 #endif
+	Measure fMeasure;
 	int fAnalogPin;
 
 	Command fCommand;
 	State fState;
 	unsigned long fLastStateChangeMicros;
-	unsigned long fMeasureAccumulator;
 	unsigned long fPosition;
 	int fSpeed;
 	int fAcceleration;
@@ -130,9 +159,6 @@ private:
 	int fIntegral;
 	int fPrevError;
 	int fPwmMicros;
-	int fMinMeasure;
-	int fMaxMeasure;
-	int fMeasureCount;
 };
 
 #endif

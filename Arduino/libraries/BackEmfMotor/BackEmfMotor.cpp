@@ -28,10 +28,6 @@ BackEmfMotor::BackEmfMotor() {
 	fSpeed = 0;
 	fAcceleration = 0;
 	fPrevSpeed = 0;
-	fMeasureAccumulator = 0;
-	fMeasureCount = 0;
-	fMaxMeasure = 0;
-	fMinMeasure = 32767;
 	fIntegral = 0;
 	fPrevError = 0;
 }
@@ -63,18 +59,10 @@ bool BackEmfMotor::Service() {
 		}
 		break;
 	case kMeasuring: {
-		int measure = analogRead(fAnalogPin);
-		fMeasureAccumulator += measure;
-		fMeasureCount++;
-		if (measure > fMaxMeasure) fMaxMeasure = measure;
-		if (measure < fMinMeasure) fMinMeasure = measure;
+		fMeasure.Add(analogRead(fAnalogPin));
 
 		if (elapsedMicros > (kPwmCycleMicros - ABS(fPwmMicros))) {
 			UpdatePwm();
-
-			fMaxMeasure = 0;
-			fMinMeasure = 32767;
-
 			Start();
 			return true;
 		}
@@ -106,8 +94,8 @@ static void DebugPrint(char * name, int num, unsigned long value) {
 
 void BackEmfMotor::UpdatePwm() {
 	// Measure what actually happened
-	int averageMeasure = fMeasureAccumulator / fMeasureCount;
-	int measure = fMaxMeasure;
+	int averageMeasure = fMeasure.GetAverage();
+	int measure = fMeasure.GetMax();
 
 	if (fPwmMicros < 0) {
 		fSpeed = -measure;
@@ -157,11 +145,11 @@ void BackEmfMotor::UpdatePwm() {
 	else if (fPwmMicros > kMaxPwmMicros) fPwmMicros = kMaxPwmMicros;
 
 #ifdef __DEBUG_BackEmfMotor__
-	DebugPrint("mt", fAnalogPin, fMeasureAccumulator);
-	DebugPrint(" mc", fAnalogPin, fMeasureCount);
-	DebugPrint(" min", fAnalogPin, fMinMeasure);
+	DebugPrint("mt", fAnalogPin, fMeasure.GetAccumulator());
+	DebugPrint(" mc", fAnalogPin, fMeasure.GetCount());
+	DebugPrint(" min", fAnalogPin, fMeasure.GetMin());
 	DebugPrint(" avg", fAnalogPin, averageMeasure);
-	DebugPrint(" max", fAnalogPin, fMaxMeasure);
+	DebugPrint(" max", fAnalogPin, fMeasure.GetMax());
 	DebugPrint(" tgt", fAnalogPin, fTargetSpeed);
 	DebugPrint(" tgt", fAnalogPin, fTargetSpeed);
 	DebugPrint(" pwm", fAnalogPin, fPwmMicros);
