@@ -42,11 +42,9 @@ cvCreateCameraCapture and delivers pictures in 640x480 resolution)
 -cvQueryFrame -> raspiCamCvQueryFrame
 -CvCapture -> RaspiCamCvCapture
 
-If you want to capture pictures in a different resolution that 640x480, you can
-also instantiate your own RaspiCamCvCapture by calling
-raspiCamCvCreateCameraCaptureWithDims. This is the function that
-cvCreateCameraCapture delegates to. It allows you to set the dimensions of the
-pictures in pixels directly.
+If you want to set the capture's resolution manually, use
+raspiCamCvSetCaptureProperty. Otherwise the querying the frame will return an
+image in the camera's native resolution (2592x1944 px).
 
 Credits:
 --------------------------------------------------

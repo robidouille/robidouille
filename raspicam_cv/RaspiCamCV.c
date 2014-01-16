@@ -416,11 +416,17 @@ static void check_disable_port(MMAL_PORT_T *port)
       mmal_port_disable(port);
 }
 
-RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
+void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
 {
-		return raspiCamCvCreateCameraCaptureWithDims(640, 480);
+	if (property_id == RPI_CAP_PROP_FRAME_HEIGHT)
+        capture->pState->height = value;
+	else if (property_id == RPI_CAP_PROP_FRAME_WIDTH)
+		capture->pState->height = value;
+	else if (property_id == RPI_CAP_PROP_FPS)
+		capture->pState->framerate = value;
 }
-RaspiCamCvCapture * raspiCamCvCreateCameraCaptureWithDims(int width, int height)
+
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 {
 	RaspiCamCvCapture * capture = (RaspiCamCvCapture*)malloc(sizeof(RaspiCamCvCapture));
 	// Our main data storage vessel..
@@ -435,8 +441,6 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCaptureWithDims(int width, int height)
 
 	// read default status
 	default_status(state);
-	state->width = width;
-	state->height = height;
 
 	int w = state->width;
 	int h = state->height;
@@ -537,10 +541,6 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 	free(state);
 	free(*capture);
 	*capture = 0;
-}
-
-void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
-{
 }
 
 IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture)
