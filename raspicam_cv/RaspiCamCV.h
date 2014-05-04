@@ -31,7 +31,7 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture);
  * 	RPI_CAP_PROP_FRAME_HEIGHT - Height of the frames in the stream.
  * value - Value to set the property to
  */
-int raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id,
+void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id,
 		double value);
 IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture);
 
