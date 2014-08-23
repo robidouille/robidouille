@@ -65,3 +65,6 @@ If your userland library is in another directory than as specified above, you ne
 
 #### RaspiCamCV.c:38:16: fatal error: cv.h: No such file or directory  
 You didn't apt-get the suggested libraries at the top of this file
+
+#### (RaspiCamTest:14072): Gtk-WARNING **: cannot open display ####
+You need to run raspicamtest within an X server. Type startx first, open a terminal window, and launch raspicamtest from there.
