@@ -68,3 +68,6 @@ You didn't apt-get the suggested libraries at the top of this file
 
 #### (RaspiCamTest:14072): Gtk-WARNING **: cannot open display ####
 You need to run raspicamtest within an X server. Type startx first, open a terminal window, and launch raspicamtest from there.
+
+#### raspicamtest causes the entire raspberry pi to crash ####
+Your pi power supply may not be up to the task. Capturing images in a loop makes the pi work hard.
