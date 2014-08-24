@@ -45,9 +45,10 @@ Link with the userland libraries:
 
 In your code add **#include "RaspiCamCV.h"** and replace:
 
+- CvCapture -> RaspiCamCvCapture
 - cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
 - cvQueryFrame -> raspiCamCvQueryFrame
-- CvCapture -> RaspiCamCvCapture
+- cvReleaseCapture -> raspiCamCvReleaseCapture
  
 ### Credits ###
 RaspiCamCV.c/h is the library source.
