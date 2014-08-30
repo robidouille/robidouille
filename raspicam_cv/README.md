@@ -28,10 +28,11 @@ You need the raspberry pi userland libraries:
 
 This will create:
 
-- **libraspicamcv.a**: The raspberry cam library which provides an opencv like interface
-- **raspicamtest**: A small test app which uses the library
+- **libraspicamcv.a**: A static raspberry cam library which provides an opencv like interface
+- **libraspicamcv.so**: A shared library of the above
+- **raspicamtest**: A small test app which uses the static library
  
-### Use it in your own project ###
+### Use the static library in your own project ###
 
 Add the include path
 
