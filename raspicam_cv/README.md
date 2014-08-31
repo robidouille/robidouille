@@ -57,7 +57,7 @@ RaspiCamCV.c/h is the library source.
 It's converted from camcv_vid0.c from [Pierre Raufast](https://thinkrpi.wordpress.com/2013/05/22/opencv-and-camera-board-csi/ "Pierre Raufast").
 
 ### More info ###
-- [http://www.robidouille.com](http://www.robidouille.com)
+- [http://www.robidouille.com](https://robidouille.wordpress.com/2013/10/19/raspberry-pi-camera-with-opencv/)
 - [https://www.google.com/+Robidouille](https://www.google.com/+Robidouille)
 
 
