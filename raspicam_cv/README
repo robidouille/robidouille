@@ -37,9 +37,14 @@ link with the raspicamcv library: -L$(HOME)/git/robidouille/raspicam_cv -lraspic
 link with the userland libraries: -L$(HOME)/git/raspberrypi/userland/build/lib -lmmal_core -lmmal -l mmal_util -lvcos -lbcm_host
 
 In your code add a #include "RaspiCamCV.h", and replace:
--cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
+-cvCreateCameraCapture -> raspiCamCvCreateCameraCapture (function is analog to
+cvCreateCameraCapture and delivers pictures in 640x480 resolution)
 -cvQueryFrame -> raspiCamCvQueryFrame
 -CvCapture -> RaspiCamCvCapture
+
+If you want to set the capture's resolution manually, use
+raspiCamCvSetCaptureProperty. Otherwise the querying the frame will return an
+image in the camera's native resolution (2592x1944 px).
 
 Credits:
 --------------------------------------------------
