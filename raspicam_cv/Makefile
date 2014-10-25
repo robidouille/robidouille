@@ -37,7 +37,7 @@ RASPICAMCV_OBJS = \
 RASPICAMTEST_OBJS = \
 	$(OBJS)/RaspiCamTest.o \
 
-TARGETS = libraspicamcv.a raspicamtest
+TARGETS = libraspicamcv.a libraspicamcv.so raspicamtest
 
 all: $(TARGETS)
 
@@ -49,6 +49,9 @@ $(OBJS)/%.o: $(USERLAND_ROOT)/host_applications/linux/apps/raspicam/%.c
 
 libraspicamcv.a: $(RASPICAMCV_OBJS)
 	ar rcs libraspicamcv.a -o $+
+
+libraspicamcv.so: $(RASPICAMCV_OBJS)
+	gcc -shared -o libraspicamcv.so $+ -Wl,-whole-archive  -lmmal_core -lmmal -l mmal_util -lvcos -lbcm_host -Wl,-no-whole-archive
 
 raspicamtest: $(RASPICAMTEST_OBJS) libraspicamcv.a
 	gcc $(LDFLAGS) $+ $(LDFLAGS2) -L. -lraspicamcv -o $@
