@@ -37,7 +37,7 @@ RASPICAMCV_OBJS = \
 RASPICAMTEST_OBJS = \
 	$(OBJS)/RaspiCamTest.o \
 
-TARGETS = libraspicamcv.a libraspicamcv.so raspicamtest
+TARGETS = libraspicamcv.a raspicamtest libraspicamcv.so
 
 all: $(TARGETS)
 
