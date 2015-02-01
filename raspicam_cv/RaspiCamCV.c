@@ -81,11 +81,11 @@ int mmal_status_to_int(MMAL_STATUS_T status);
 typedef struct _RASPIVID_STATE
 {
 	int finished;
-	int width;                          /// Requested width of image
-	int height;                         /// requested height of image
-	int bitrate;                        /// Requested bitrate
-	int framerate;                      /// Requested frame rate (fps)
-	int graymode;			/// capture in gray only (2x faster)
+	int width;            	/// Requested width of image
+	int height;           	/// requested height of image
+	int bitrate;          	/// Requested bitrate
+	int framerate;        	/// Requested frame rate (fps)
+	int monochrome;			/// Capture in gray only (2x faster)
 	int immutableInput;     /// Flag to specify whether encoder works in place or creates a new buffer. Result is preview can display either
                             /// the camera output or the encoder output (with compression artifacts)
 	RASPICAM_CAMERA_PARAMETERS camera_parameters; /// Camera setup parameters
@@ -123,7 +123,7 @@ static void default_status(RASPIVID_STATE *state)
    state->bitrate 			= 17000000; // This is a decent default bitrate for 1080p
    state->framerate 		= VIDEO_FRAME_RATE_NUM;
    state->immutableInput 	= 1;
-   state->graymode 			= 0;		// Gray (1) much faster than color (0)
+   state->monochrome 		= 0;		// Gray (1) much faster than color (0)
    
    // Set up the camera_parameters to default
    raspicamcontrol_set_defaults(&state->camera_parameters);
@@ -159,7 +159,7 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
 
 			memcpy(state->py->imageData,buffer->data,w*h);	// read Y
 		
-			if (state->graymode==0)
+			if (state->monochrome==0)
 			{
 				memcpy(state->pu->imageData,buffer->data+w*h,w*h4); // read U
 				memcpy(state->pv->imageData,buffer->data+w*h+w*h4,w*h4); // read v
@@ -428,7 +428,7 @@ double raspiCamCvGetCaptureProperty(RaspiCamCvCapture * capture, int property_id
 		case RPI_CAP_PROP_FPS:
 			return capture->pState->framerate;
 		case RPI_CAP_PROP_MONOCHROME:
-			return capture->pState->graymode;
+			return capture->pState->monochrome;
 		case RPI_CAP_PROP_BITRATE:
 			return capture->pState->bitrate;
     }
@@ -480,7 +480,7 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 		if (config->height != 0) 		state->height = config->height;
 		if (config->bitrate != 0) 		state->bitrate = config->bitrate;
 		if (config->framerate != 0) 	state->framerate = config->framerate;
-		if (config->monochrome != 0) 	state->graymode = config->monochrome;
+		if (config->monochrome != 0) 	state->monochrome = config->monochrome;
 	}
 
 	int w = state->width;
@@ -488,7 +488,7 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 	
 	state->py = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);		// Y component of YUV I420 frame
 	
-	if (state->graymode==0) {
+	if (state->monochrome==0) {
 		state->pu = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// U component of YUV I420 frame
 		state->pv = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// V component of YUV I420 frame
 	}
@@ -496,7 +496,7 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 	vcos_semaphore_create(&state->capture_sem, "Capture-Sem", 0);
 	vcos_semaphore_create(&state->capture_done_sem, "Capture-Done-Sem", 0);
 
-	if (state->graymode==0) {
+	if (state->monochrome==0) {
 		state->pu_big = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);
 		state->pv_big = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);
 		state->yuvImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 3);
@@ -576,7 +576,7 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 
 	cvReleaseImage(&state->pu);
 	
-	if (state->graymode==0) {
+	if (state->monochrome==0) {
 		cvReleaseImage(&state->pv);
 		cvReleaseImage(&state->py);
 		cvReleaseImage(&state->pu_big);
@@ -596,7 +596,7 @@ IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture)
 	vcos_semaphore_post(&state->capture_sem);
 	vcos_semaphore_wait(&state->capture_done_sem);
 
-	if (state->graymode==0)
+	if (state->monochrome==0)
 	{
 		cvResize(state->pu, state->pu_big, CV_INTER_NN);
 		cvResize(state->pv, state->pv_big, CV_INTER_NN);  //CV_INTER_LINEAR looks better but it's slower
