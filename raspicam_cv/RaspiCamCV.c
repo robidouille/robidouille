@@ -103,7 +103,6 @@ typedef struct _RASPIVID_STATE
    
 } RASPIVID_STATE;
 
-// default status
 static void default_status(RASPIVID_STATE *state)
 {
    if (!state)
@@ -416,7 +415,48 @@ static void check_disable_port(MMAL_PORT_T *port)
       mmal_port_disable(port);
 }
 
-RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
+double raspiCamCvGetCaptureProperty(RaspiCamCvCapture * capture, int property_id)
+{
+    switch(property_id)
+    {
+		case RPI_CAP_PROP_FRAME_HEIGHT:
+			return capture->pState->height;
+		case RPI_CAP_PROP_FRAME_WIDTH:
+			return capture->pState->width;
+		case RPI_CAP_PROP_FPS:
+			return capture->pState->framerate;
+		case RPI_CAP_PROP_MONOCHROME:
+			return capture->pState->graymode;
+		case RPI_CAP_PROP_BITRATE:
+			return capture->pState->bitrate;
+    }
+    return 0;
+}
+
+int raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
+{
+    int retval = 1; // assume success (bool)
+	
+	switch(property_id)
+	{
+		case RPI_CAP_PROP_FRAME_HEIGHT:
+			capture->pState->height = value;
+			break;
+		case RPI_CAP_PROP_FRAME_WIDTH:
+			capture->pState->width = value;
+			break;
+		case RPI_CAP_PROP_FPS:
+			capture->pState->framerate = value;
+			break;
+		default:
+			retval = 0;
+			break;
+	}
+	
+	return retval;
+}
+
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* config)
 {
 	RaspiCamCvCapture * capture = (RaspiCamCvCapture*)malloc(sizeof(RaspiCamCvCapture));
 	// Our main data storage vessel..
@@ -431,6 +471,14 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 
 	// read default status
 	default_status(state);
+	
+	if (config != NULL)	{
+		if (config->width != 0) 		state->width = config->width;
+		if (config->height != 0) 		state->height = config->height;
+		if (config->bitrate != 0) 		state->bitrate = config->bitrate;
+		if (config->framerate != 0) 	state->framerate = config->framerate;
+		if (config->monochrome != 0) 	state->graymode = config->monochrome;
+	}
 
 	int w = state->width;
 	int h = state->height;
@@ -498,6 +546,11 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 	return capture;
 }
 
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
+{
+	return raspiCamCvCreateCameraCapture2(index, NULL);
+}
+
 void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 {
 	RASPIVID_STATE * state = (*capture)->pState;
@@ -516,12 +569,10 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 	destroy_camera_component(state);
 
 	cvReleaseImage(&state->pu);
+	
 	if (state->graymode==0) {
 		cvReleaseImage(&state->pv);
 		cvReleaseImage(&state->py);
-	}
-
-	if (state->graymode==0) {
 		cvReleaseImage(&state->pu_big);
 		cvReleaseImage(&state->pv_big);
 		cvReleaseImage(&state->yuvImage);
@@ -531,10 +582,6 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 	free(state);
 	free(*capture);
 	*capture = 0;
-}
-
-void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
-{
 }
 
 IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture)
