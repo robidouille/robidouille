@@ -32,7 +32,12 @@ This will create:
 - **libraspicamcv.so**: A shared library of the above
 - **raspicamtest**: A small test app which uses the static library
  
-### Use the static library in your own project ###
+### RaspicamTest ###
+Uses the static library to render a video using OpenCV.
+
+Press Esc to exit.
+
+### Using the static library in your own project ###
 
 Add the include path
 
@@ -50,6 +55,9 @@ In your code add **#include "RaspiCamCV.h"** and replace:
 - cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
 - cvQueryFrame -> raspiCamCvQueryFrame
 - cvReleaseCapture -> raspiCamCvReleaseCapture
+- cvGetCaptureProperty -> raspiCamCvGetCaptureProperty
+
+cvSetCaptureProperty does not currently work. Use the `raspiCamCvCreateCameraCapture2` method to specify width, height, framerate, bitrate and monochrome settings.
  
 ### Credits ###
 RaspiCamCV.c/h is the library source.

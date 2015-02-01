@@ -20,10 +20,12 @@
 // similar to what OpenCV provides, but uses the RaspiCam
 // underneath - September 22 2013.
 //
-// cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
-// cvReleaseCapture -> raspiCamCvReleaseCapture
-// cvSetCaptureProperty -> raspiCamCvSetCaptureProperty
-// cvQueryFrame -> raspiCamCvQueryFrame
+// cvCreateCameraCapture 	-> raspiCamCvCreateCameraCapture
+//							-> raspiCamCvCreateCameraCapture2(with config)
+// cvReleaseCapture 		-> raspiCamCvReleaseCapture
+// cvSetCaptureProperty 	-> raspiCamCvSetCaptureProperty
+// cvGetCaptureProperty 	-> raspiCamCvGetCaptureProperty
+// cvQueryFrame 			-> raspiCamCvQueryFrame
 //
 /////////////////////////////////////////////////////////////
 
@@ -116,8 +118,8 @@ static void default_status(RASPIVID_STATE *state)
 
    // Now set anything non-zero
    state->finished          = 0;
-   state->width 			= 640;      // use a multiple of 320 (640, 1280)
-   state->height 			= 480;		// use a multiple of 240 (480, 960)
+   state->width 			= 320;      // use a multiple of 320 (640, 1280)
+   state->height 			= 240;		// use a multiple of 240 (480, 960)
    state->bitrate 			= 17000000; // This is a decent default bitrate for 1080p
    state->framerate 		= VIDEO_FRAME_RATE_NUM;
    state->immutableInput 	= 1;
@@ -435,8 +437,10 @@ double raspiCamCvGetCaptureProperty(RaspiCamCvCapture * capture, int property_id
 
 int raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
 {
-    int retval = 1; // assume success (bool)
-	
+    int retval = 0; // indicate failure
+
+/* 
+	Naive implementation does not work.	Need to reset the camera and restart
 	switch(property_id)
 	{
 		case RPI_CAP_PROP_FRAME_HEIGHT:
@@ -452,7 +456,7 @@ int raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, d
 			retval = 0;
 			break;
 	}
-	
+*/	
 	return retval;
 }
 
@@ -469,7 +473,6 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 
 	bcm_host_init();
 
-	// read default status
 	default_status(state);
 	
 	if (config != NULL)	{
@@ -482,11 +485,14 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 
 	int w = state->width;
 	int h = state->height;
+	
 	state->py = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);		// Y component of YUV I420 frame
+	
 	if (state->graymode==0) {
 		state->pu = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// U component of YUV I420 frame
 		state->pv = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// V component of YUV I420 frame
 	}
+	
 	vcos_semaphore_create(&state->capture_sem, "Capture-Sem", 0);
 	vcos_semaphore_create(&state->capture_done_sem, "Capture-Done-Sem", 0);
 
@@ -555,7 +561,7 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 {
 	RASPIVID_STATE * state = (*capture)->pState;
 
-	// Unblock the the callback.
+	// Unblock the callback.
 	state->finished = 1;
 	vcos_semaphore_post(&state->capture_sem);
 	vcos_semaphore_wait(&state->capture_done_sem);

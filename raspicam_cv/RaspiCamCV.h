@@ -32,7 +32,7 @@ enum
     RPI_CAP_PROP_BITRATE		=37   // no natural mapping here - used CV_CAP_PROP_SETTINGS
 };
 
-//RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG config);
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* config);
 RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index);
 void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture);
 double raspiCamCvGetCaptureProperty(RaspiCamCvCapture * capture, int property_id);
