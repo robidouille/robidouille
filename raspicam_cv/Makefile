@@ -51,7 +51,7 @@ libraspicamcv.a: $(RASPICAMCV_OBJS)
 	ar rcs libraspicamcv.a -o $+
 
 libraspicamcv.so: $(RASPICAMCV_OBJS)
-	gcc -shared -o libraspicamcv.so $+ -Wl,-whole-archive $(LD_FLAGS_PI) -lopencv_core -lopencv_highgui -Wl,-no-whole-archive
+	gcc -shared -o libraspicamcv.so $+ -Wl,-whole-archive $(LDFLAGS_PI) -lopencv_core -lopencv_highgui -Wl,-no-whole-archive
 
 raspicamtest: $(RASPICAMTEST_OBJS) libraspicamcv.a
 	gcc $(LDFLAGS) $+ $(LDFLAGS2) -L. libraspicamcv.a -o $@
