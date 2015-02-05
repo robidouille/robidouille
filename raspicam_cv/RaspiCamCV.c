@@ -90,13 +90,10 @@ typedef struct _RASPIVID_STATE
 
 	MMAL_COMPONENT_T *camera_component;    /// Pointer to the camera component
 	MMAL_COMPONENT_T *encoder_component;   /// Pointer to the encoder component
-	MMAL_CONNECTION_T *preview_connection; /// Pointer to the connection from camera to preview
-	MMAL_CONNECTION_T *encoder_connection; /// Pointer to the connection from camera to encoder
 
 	MMAL_POOL_T *video_pool; /// Pointer to the pool of buffers used by encoder output port
 
-	IplImage *py, *pu, *pv;
-	IplImage *pu_big, *pv_big, *yuvImage,* dstImage;
+	IplImage *dstImage;
 
 	VCOS_SEMAPHORE_T capture_sem;
 	VCOS_SEMAPHORE_T capture_done_sem;
@@ -154,15 +151,9 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
 			//
 			int w=state->width;	// get image size
 			int h=state->height;
-			int h4=h/4;
 
-			memcpy(state->py->imageData,buffer->data,w*h);	// read Y
-		
-			if (state->graymode==0)
-			{
-				memcpy(state->pu->imageData,buffer->data+w*h,w*h4); // read U
-				memcpy(state->pv->imageData,buffer->data+w*h+w*h4,w*h4); // read v
-			}
+			int pixelSize = state->graymode : 1 : 3;
+			memcpy(state->dstImage->imageData,buffer->data,w*h*pixelSize);	
 
 			vcos_semaphore_post(&state->capture_done_sem);
 			vcos_semaphore_wait(&state->capture_sem);
@@ -371,12 +362,6 @@ static void destroy_encoder_component(RASPIVID_STATE *state)
    {
       mmal_port_pool_destroy(state->encoder_component->output[0], state->video_pool);
    }
-
-   if (state->encoder_component)
-   {
-      mmal_component_destroy(state->encoder_component);
-      state->encoder_component = NULL;
-   }
 }
 
 /**
@@ -434,20 +419,10 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 
 	int w = state->width;
 	int h = state->height;
-	state->py = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);		// Y component of YUV I420 frame
-	if (state->graymode==0) {
-		state->pu = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// U component of YUV I420 frame
-		state->pv = cvCreateImage(cvSize(w/2,h/2), IPL_DEPTH_8U, 1);	// V component of YUV I420 frame
-	}
+	state->dstImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 3); // final picture to display
+
 	vcos_semaphore_create(&state->capture_sem, "Capture-Sem", 0);
 	vcos_semaphore_create(&state->capture_done_sem, "Capture-Done-Sem", 0);
-
-	if (state->graymode==0) {
-		state->pu_big = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);
-		state->pv_big = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 1);
-		state->yuvImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 3);
-		state->dstImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 3); // final picture to display
-	}
 
 	// create camera
 	if (!create_camera_component(state))
@@ -515,18 +490,7 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 
 	destroy_camera_component(state);
 
-	cvReleaseImage(&state->pu);
-	if (state->graymode==0) {
-		cvReleaseImage(&state->pv);
-		cvReleaseImage(&state->py);
-	}
-
-	if (state->graymode==0) {
-		cvReleaseImage(&state->pu_big);
-		cvReleaseImage(&state->pv_big);
-		cvReleaseImage(&state->yuvImage);
-		cvReleaseImage(&state->dstImage);
-	}
+	cvReleaseImage(&state->dstImage);
 
 	free(state);
 	free(*capture);
@@ -543,14 +507,5 @@ IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture)
 	vcos_semaphore_post(&state->capture_sem);
 	vcos_semaphore_wait(&state->capture_done_sem);
 
-	if (state->graymode==0)
-	{
-		cvResize(state->pu, state->pu_big, CV_INTER_NN);
-		cvResize(state->pv, state->pv_big, CV_INTER_NN);  //CV_INTER_LINEAR looks better but it's slower
-		cvMerge(state->py, state->pu_big, state->pv_big, NULL, state->yuvImage);
-	
-		cvCvtColor(state->yuvImage,state->dstImage,CV_YCrCb2RGB);	// convert in RGB color space (slow)
-		return state->dstImage;
-	}
-	return state->py;
+	return state->dstImage;
 }
