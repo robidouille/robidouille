@@ -152,7 +152,7 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
 			int w=state->width;	// get image size
 			int h=state->height;
 
-			int pixelSize = state->graymode : 1 : 3;
+			int pixelSize = state->graymode ? 1 : 3;
 			memcpy(state->dstImage->imageData,buffer->data,w*h*pixelSize);	
 
 			vcos_semaphore_post(&state->capture_done_sem);
@@ -243,8 +243,17 @@ static MMAL_COMPONENT_T *create_camera_component(RASPIVID_STATE *state)
 	// Set the encode format on the video  port
 	
 	format = video_port->format;
-	format->encoding_variant = MMAL_ENCODING_I420;
-	format->encoding = MMAL_ENCODING_I420;
+	if (state->graymode)
+	{
+		format->encoding_variant = MMAL_ENCODING_I420;
+		format->encoding = MMAL_ENCODING_I420;
+	}
+	else
+	{
+		format->encoding = MMAL_ENCODING_RGB24;
+		format->encoding_variant = MMAL_ENCODING_RGB24;
+	}
+
 	format->es->video.width = state->width;
 	format->es->video.height = state->height;
 	format->es->video.crop.x = 0;
@@ -419,7 +428,8 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 
 	int w = state->width;
 	int h = state->height;
-	state->dstImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 3); // final picture to display
+	int pixelSize = state->graymode ? 1 : 3;
+	state->dstImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, pixelSize); // final picture to display
 
 	vcos_semaphore_create(&state->capture_sem, "Capture-Sem", 0);
 	vcos_semaphore_create(&state->capture_done_sem, "Capture-Done-Sem", 0);
