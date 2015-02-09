@@ -51,7 +51,10 @@ int main(int argc, const char** argv){
 			, raspiCamCvGetCaptureProperty(capture, RPI_CAP_PROP_BITRATE)
 			, raspiCamCvGetCaptureProperty(capture, RPI_CAP_PROP_MONOCHROME)
 		);
-		cvPutText (image, text, cvPoint(05, 40), &font, cvScalar(255, 255, 0, 0));	
+		cvPutText (image, text, cvPoint(05, 40), &font, cvScalar(255, 255, 0, 0));
+		
+		sprintf(text, "Press ESC to exit");
+		cvPutText (image, text, cvPoint(05, 80), &font, cvScalar(255, 255, 0, 0));
 		
 		cvShowImage("RaspiCamTest", image);
 		
