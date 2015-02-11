@@ -10,21 +10,47 @@
 #include <cv.h>
 #include <highgui.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "RaspiCamCV.h"
 
-int main(int argc, const char** argv){
+int main(int argc, char *argv[ ]){
 
 	RASPIVID_CONFIG * config = (RASPIVID_CONFIG*)malloc(sizeof(RASPIVID_CONFIG));
 	
-	config->width=640;
-	config->height=480;
+	config->width=320;
+	config->height=240;
 	config->bitrate=0;	// zero: leave as default
 	config->framerate=0;
 	config->monochrome=0;
 
+	int opt;
+
+	while ((opt = getopt(argc, argv, "lxm")) != -1)
+	{
+		switch (opt)
+		{
+			case 'l':					// large
+				config->width = 640;
+				config->height = 480;
+				break;
+			case 'x':	   				// extra large
+				config->width = 960;
+				config->height = 720;
+				break;
+			case 'm':					// monochrome
+				config->monochrome = 1;
+				break;
+			default:
+				fprintf(stderr, "Usage: %s [-x] [-l] [-m] \n", argv[0], opt);
+				fprintf(stderr, "-l: Large mode\n");
+				fprintf(stderr, "-x: Extra large mode\n");
+				fprintf(stderr, "-l: Monochrome mode\n");
+				exit(EXIT_FAILURE);
+		}
+	}
+
 	/*
-	Could also use hard coded defaults method
-	raspiCamCvCreateCameraCapture(0)
+	Could also use hard coded defaults method: raspiCamCvCreateCameraCapture(0)
 	*/
     RaspiCamCvCapture * capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config); 
 	free(config);
