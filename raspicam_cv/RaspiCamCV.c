@@ -20,10 +20,12 @@
 // similar to what OpenCV provides, but uses the RaspiCam
 // underneath - September 22 2013.
 //
-// cvCreateCameraCapture -> raspiCamCvCreateCameraCapture
-// cvReleaseCapture -> raspiCamCvReleaseCapture
-// cvSetCaptureProperty -> raspiCamCvSetCaptureProperty
-// cvQueryFrame -> raspiCamCvQueryFrame
+// cvCreateCameraCapture 	-> raspiCamCvCreateCameraCapture
+//							-> raspiCamCvCreateCameraCapture2(with config)
+// cvReleaseCapture 		-> raspiCamCvReleaseCapture
+// cvSetCaptureProperty 	-> raspiCamCvSetCaptureProperty
+// cvGetCaptureProperty 	-> raspiCamCvGetCaptureProperty
+// cvQueryFrame 			-> raspiCamCvQueryFrame
 //
 /////////////////////////////////////////////////////////////
 
@@ -79,11 +81,11 @@ int mmal_status_to_int(MMAL_STATUS_T status);
 typedef struct _RASPIVID_STATE
 {
 	int finished;
-	int width;                          /// Requested width of image
-	int height;                         /// requested height of image
-	int bitrate;                        /// Requested bitrate
-	int framerate;                      /// Requested frame rate (fps)
-	int graymode;			/// capture in gray only (2x faster)
+	int width;            	/// Requested width of image
+	int height;           	/// requested height of image
+	int bitrate;          	/// Requested bitrate
+	int framerate;        	/// Requested frame rate (fps)
+	int monochrome;			/// Capture in gray only (2x faster)
 	int immutableInput;     /// Flag to specify whether encoder works in place or creates a new buffer. Result is preview can display either
                             /// the camera output or the encoder output (with compression artifacts)
 	RASPICAM_CAMERA_PARAMETERS camera_parameters; /// Camera setup parameters
@@ -100,7 +102,6 @@ typedef struct _RASPIVID_STATE
    
 } RASPIVID_STATE;
 
-// default status
 static void default_status(RASPIVID_STATE *state)
 {
    if (!state)
@@ -119,7 +120,7 @@ static void default_status(RASPIVID_STATE *state)
    state->bitrate 			= 17000000; // This is a decent default bitrate for 1080p
    state->framerate 		= VIDEO_FRAME_RATE_NUM;
    state->immutableInput 	= 1;
-   state->graymode 			= 0;		// Gray (1) much faster than color (0)
+   state->monochrome 		= 0;		// Gray (1) much faster than color (0)
    
    // Set up the camera_parameters to default
    raspicamcontrol_set_defaults(&state->camera_parameters);
@@ -152,7 +153,7 @@ static void video_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
 			int w=state->width;	// get image size
 			int h=state->height;
 
-			int pixelSize = state->graymode ? 1 : 3;
+			int pixelSize = state->monochrome ? 1 : 3;
 			memcpy(state->dstImage->imageData,buffer->data,w*h*pixelSize);	
 
 			vcos_semaphore_post(&state->capture_done_sem);
@@ -243,7 +244,7 @@ static MMAL_COMPONENT_T *create_camera_component(RASPIVID_STATE *state)
 	// Set the encode format on the video  port
 	
 	format = video_port->format;
-	if (state->graymode)
+	if (state->monochrome)
 	{
 		format->encoding_variant = MMAL_ENCODING_I420;
 		format->encoding = MMAL_ENCODING_I420;
@@ -410,7 +411,50 @@ static void check_disable_port(MMAL_PORT_T *port)
       mmal_port_disable(port);
 }
 
-RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
+double raspiCamCvGetCaptureProperty(RaspiCamCvCapture * capture, int property_id)
+{
+    switch(property_id)
+    {
+		case RPI_CAP_PROP_FRAME_HEIGHT:
+			return capture->pState->height;
+		case RPI_CAP_PROP_FRAME_WIDTH:
+			return capture->pState->width;
+		case RPI_CAP_PROP_FPS:
+			return capture->pState->framerate;
+		case RPI_CAP_PROP_MONOCHROME:
+			return capture->pState->monochrome;
+		case RPI_CAP_PROP_BITRATE:
+			return capture->pState->bitrate;
+    }
+    return 0;
+}
+
+int raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
+{
+    int retval = 0; // indicate failure
+
+/* 
+	Naive implementation does not work.	Need to reset the camera and restart
+	switch(property_id)
+	{
+		case RPI_CAP_PROP_FRAME_HEIGHT:
+			capture->pState->height = value;
+			break;
+		case RPI_CAP_PROP_FRAME_WIDTH:
+			capture->pState->width = value;
+			break;
+		case RPI_CAP_PROP_FPS:
+			capture->pState->framerate = value;
+			break;
+		default:
+			retval = 0;
+			break;
+	}
+*/	
+	return retval;
+}
+
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* config)
 {
 	RaspiCamCvCapture * capture = (RaspiCamCvCapture*)malloc(sizeof(RaspiCamCvCapture));
 	// Our main data storage vessel..
@@ -423,12 +467,19 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 
 	bcm_host_init();
 
-	// read default status
 	default_status(state);
+	
+	if (config != NULL)	{
+		if (config->width != 0) 		state->width = config->width;
+		if (config->height != 0) 		state->height = config->height;
+		if (config->bitrate != 0) 		state->bitrate = config->bitrate;
+		if (config->framerate != 0) 	state->framerate = config->framerate;
+		if (config->monochrome != 0) 	state->monochrome = config->monochrome;
+	}
 
 	int w = state->width;
 	int h = state->height;
-	int pixelSize = state->graymode ? 1 : 3;
+	int pixelSize = state->monochrome ? 1 : 3;
 	state->dstImage = cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, pixelSize); // final picture to display
 
 	vcos_semaphore_create(&state->capture_sem, "Capture-Sem", 0);
@@ -483,11 +534,16 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
 	return capture;
 }
 
+RaspiCamCvCapture * raspiCamCvCreateCameraCapture(int index)
+{
+	return raspiCamCvCreateCameraCapture2(index, NULL);
+}
+
 void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 {
 	RASPIVID_STATE * state = (*capture)->pState;
 
-	// Unblock the the callback.
+	// Unblock the callback.
 	state->finished = 1;
 	vcos_semaphore_post(&state->capture_sem);
 	vcos_semaphore_wait(&state->capture_done_sem);
@@ -505,10 +561,6 @@ void raspiCamCvReleaseCapture(RaspiCamCvCapture ** capture)
 	free(state);
 	free(*capture);
 	*capture = 0;
-}
-
-void raspiCamCvSetCaptureProperty(RaspiCamCvCapture * capture, int property_id, double value)
-{
 }
 
 IplImage * raspiCamCvQueryFrame(RaspiCamCvCapture * capture)
