@@ -475,6 +475,9 @@ RaspiCamCvCapture * raspiCamCvCreateCameraCapture2(int index, RASPIVID_CONFIG* c
 		if (config->bitrate != 0) 		state->bitrate = config->bitrate;
 		if (config->framerate != 0) 	state->framerate = config->framerate;
 		if (config->monochrome != 0) 	state->monochrome = config->monochrome;
+		if (config->rotation != 0) 		state->camera_parameters.rotation = config->rotation;
+		if (config->hflip != 0) 		state->camera_parameters.hflip = config->hflip;
+		if (config->vflip != 0) 		state->camera_parameters.vflip = config->vflip;
 	}
 
 	int w = state->width;
