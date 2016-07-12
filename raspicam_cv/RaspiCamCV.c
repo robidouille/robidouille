@@ -251,8 +251,9 @@ static MMAL_COMPONENT_T *create_camera_component(RASPIVID_STATE *state)
 	}
 	else
 	{
-		format->encoding = MMAL_ENCODING_RGB24;
-		format->encoding_variant = MMAL_ENCODING_RGB24;
+		format->encoding =
+			mmal_util_rgb_order_fixed(video_port) ? MMAL_ENCODING_BGR24 : MMAL_ENCODING_RGB24;
+		format->encoding_variant = 0;
 	}
 
 	format->es->video.width = state->width;
