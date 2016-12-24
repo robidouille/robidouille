@@ -14,6 +14,9 @@ typedef struct
 	int bitrate;            
 	int framerate;          
 	int monochrome;			
+    int rotation;
+    int hflip;
+    int vflip;
 } RASPIVID_CONFIG;
 
 typedef struct {
